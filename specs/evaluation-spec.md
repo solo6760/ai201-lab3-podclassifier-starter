@@ -44,8 +44,8 @@ Returns the fraction of predictions that exactly match the ground truth.
 **Formula:**
 
 ```
-[blank — write out the accuracy formula in plain English.
- What counts as "correct"? What do you divide by?]
+Accuracy = (Number of correct predictions) / (Total number of predictions)
+Where a prediction is "correct" if it exactly matches the ground-truth label for that episode.
 ```
 
 ---
@@ -53,10 +53,11 @@ Returns the fraction of predictions that exactly match the ground truth.
 **Step-by-step logic:**
 
 ```
-[blank — describe the steps your code will take.
- 1. ...
- 2. ...
- 3. ...]
+1. Verify if the predictions list is empty (length == 0). If so, return 0.0.
+2. Initialize a counter for correct predictions to 0.
+3. Loop through both predictions and ground_truth lists simultaneously using their indexes (or zip).
+4. For each index, compare predictions[i] with ground_truth[i]. If they match exactly, increment the correct predictions counter.
+5. Divide the correct predictions count by the total number of predictions, and return this float value.
 ```
 
 ---
@@ -64,7 +65,7 @@ Returns the fraction of predictions that exactly match the ground truth.
 **Edge case — what if both lists are empty?**
 
 ```
-[blank — what should the function return? Why?]
+Return 0.0. If there are no predictions or ground truth labels, accuracy is technically undefined, and returning 0.0 prevents a division by zero error.
 ```
 
 ---
@@ -75,7 +76,14 @@ Returns the fraction of predictions that exactly match the ground truth.
 predictions  = ["interview", "solo", "panel", "interview"]
 ground_truth = ["interview", "solo", "solo",  "narrative"]
 
-[blank — what does compute_accuracy() return for these inputs? Show your work.]
+1. Length of lists is 4 (not empty).
+2. Comparisons:
+   - Index 0: "interview" == "interview" -> Correct (1)
+   - Index 1: "solo" == "solo" -> Correct (2)
+   - Index 2: "panel" == "solo" -> Incorrect
+   - Index 3: "interview" == "narrative" -> Incorrect
+3. Total correct = 2. Total predictions = 4.
+4. Return 2 / 4 = 0.5.
 ```
 
 ---
@@ -113,8 +121,7 @@ A `dict` keyed by label. Each value is a dict with three keys:
 **What does "correct" mean for a given class?**
 
 ```
-[blank — be precise. When does an episode count as correctly classified
- for the "interview" class, for example?]
+An episode counts as correctly classified for a class (e.g., "interview") if its ground_truth label is "interview" and its predicted label is also "interview".
 ```
 
 ---
@@ -122,7 +129,7 @@ A `dict` keyed by label. Each value is a dict with three keys:
 **What does "total" mean for a given class?**
 
 ```
-[blank — is "total" the total number of predictions, or something more specific?]
+"Total" is the total number of episodes in the dataset that have that specific ground_truth label. It is not the total number of predictions made for that label.
 ```
 
 ---
@@ -130,12 +137,16 @@ A `dict` keyed by label. Each value is a dict with three keys:
 **Step-by-step logic:**
 
 ```
-[blank — describe the steps your code will take.
- 1. Initialize ...
- 2. Loop over ...
- 3. For each pair (predicted, truth) ...
- 4. After the loop ...
- 5. Return ...]
+1. Initialize a dict where each label in VALID_LABELS maps to {"correct": 0, "total": 0, "accuracy": 0.0}.
+2. Loop over predictions and ground_truth lists simultaneously (using zip).
+3. For each pair (pred, truth):
+   a. If truth is in VALID_LABELS:
+      - Increment the "total" count for that truth class in our dict.
+      - If pred == truth, increment the "correct" count for that truth class in our dict.
+4. After the loop, iterate through each label in VALID_LABELS:
+   a. If total is greater than 0, set accuracy to correct / total.
+   b. If total is 0, set accuracy to 0.0.
+5. Return the completed dict.
 ```
 
 ---
@@ -143,8 +154,7 @@ A `dict` keyed by label. Each value is a dict with three keys:
 **Edge case — what if a class has no examples in ground_truth (total == 0)?**
 
 ```
-[blank — what should accuracy be set to? Why?
- Hint: look at the docstring in evaluate.py.]
+The accuracy should be set to 0.0, and the total/correct counts should be 0. This avoids a ZeroDivisionError and indicates that we have no data points to assess performance for this class.
 ```
 
 ---
@@ -155,14 +165,12 @@ A `dict` keyed by label. Each value is a dict with three keys:
 predictions  = ["interview", "interview", "solo", "panel", "panel"]
 ground_truth = ["interview", "solo",      "solo", "panel", "narrative"]
 
-[blank — fill in the per-class results table below]
-
 label       correct  total  accuracy
 ----------  -------  -----  --------
-interview   [blank]  [blank]  [blank]
-solo        [blank]  [blank]  [blank]
-panel       [blank]  [blank]  [blank]
-narrative   [blank]  [blank]  [blank]
+interview   1        1      1.0
+solo        1        2      0.5
+panel       1        1      1.0
+narrative   0        1      0.0
 ```
 
 ---

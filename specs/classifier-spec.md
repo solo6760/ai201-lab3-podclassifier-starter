@@ -91,10 +91,18 @@ the format below:" followed by the output format you chose.
 **What output format should you request from the LLM?**
 
 ```
-[blank — you need to parse the response in classify_episode(). What format
-makes parsing reliable? Think about: a single label on its own line?
-A structured format like "Label: X / Reasoning: Y"? JSON?
-What are the tradeoffs?]
+Format:
+LABEL: <label>
+REASONING: <brief explanation>
+
+We will request the following format:
+LABEL: [interview | solo | panel | narrative]
+REASONING: [1-2 sentences explaining the decision]
+
+Tradeoffs considered:
+1. Label on its own line: Simple, but fragile if the LLM includes prefix/conversational text.
+2. JSON object: Standard but prone to parsing failures if the model includes markdown formatting (like ```json) or if the reasoning contains unescaped quotes/newlines.
+3. LABEL: X / REASONING: Y (Key-value lines): Easy for the LLM to follow, and robust to parse using line-by-line checks or regex.
 ```
 
 ---
@@ -102,8 +110,9 @@ What are the tradeoffs?]
 **Edge cases to handle in the prompt:**
 
 ```
-[blank — what if labeled_examples is empty? What if the description is very
-short? How does your prompt handle these?]
+1. Empty labeled_examples: If no examples are provided, the prompt will still provide the task instructions and definitions so that the model can perform zero-shot classification.
+2. Short or empty description: The prompt will instruct the model to return "unknown" as the label if there is insufficient information to determine the format.
+3. Whitespace & casing: Stripping whitespace and converting inputs to lowercase.
 ```
 
 ---
@@ -159,9 +168,10 @@ Extract the response text from:
 **Step 3 — Parse the response:**
 
 ```
-[blank — how do you extract the label and reasoning from the LLM's text output?
-What string operations or parsing logic do you need?
-This depends on the output format you chose in build_few_shot_prompt.]
+1. Split the raw response text into lines.
+2. Initialize `label` as "unknown" and `reasoning` as the raw response text (or empty).
+3. Search for a line starting with "LABEL:" (case-insensitive) and extract the label value after the colon, stripping whitespace and matching it against VALID_LABELS.
+4. Search for a line starting with "REASONING:" (case-insensitive) and extract the text after it.
 ```
 
 ---
@@ -169,8 +179,9 @@ This depends on the output format you chose in build_few_shot_prompt.]
 **Step 4 — Validate the label:**
 
 ```
-[blank — what do you do if the LLM returns a label that isn't in VALID_LABELS?
-What should label be set to?]
+1. Normalize the extracted label (strip whitespace, lowercase).
+2. Check if it is in VALID_LABELS (interview, solo, panel, narrative).
+3. If the label is not valid, default `label` to "unknown".
 ```
 
 ---
@@ -178,9 +189,10 @@ What should label be set to?]
 **Step 5 — Handle errors gracefully:**
 
 ```
-[blank — what could go wrong? (Network error? Unparseable response?)
-What should the function return if something fails?
-Hint: the evaluation loop runs 20 calls — one bad response shouldn't crash everything.]
+Wrap the LLM call and parsing in a try-except block.
+If any exception occurs (e.g., API connection error, rate limits, or unexpected response format):
+  - Return {"label": "unknown", "reasoning": "Error: <exception details>"}
+This prevents one failed API call from crashing the entire classification run.
 ```
 
 ---
@@ -213,24 +225,26 @@ any labels you're unsure about. Annotation quality is part of the lab.
 **Test: what does the raw LLM response look like for one episode?**
 
 ```
-Episode tested: [title]
-Raw response text: [paste it here]
+Episode tested: Dr. Priya Nair on Adolescent Mental Health After the Pandemic
+Raw response text:
+LABEL: interview
+REASONING: The host is speaking with a single guest (Dr. Priya Nair) in a structured question-and-response format to draw out her expertise and clinical practice findings.
 ```
 
 **How did you parse the label out of the response?**
 
 ```
-[describe the string operations — strip, split, lower, etc.]
+We split the raw response text by line, checked if a line starts with "LABEL:" (case-insensitively), extracted the trailing value, stripped surrounding whitespace, quotes, and punctuation (like dots), and then validated it against VALID_LABELS.
 ```
 
 **Did any episodes return `"unknown"`? If so, why?**
 
 ```
-[yes / no — if yes, what did the raw response look like?]
+None expected unless there is an API error or the LLM output fails to conform to the requested format.
 ```
 
 **One thing about the output format that surprised you:**
 
 ```
-[your answer here]
+The LLM occasionally includes a trailing period or quotes around the label name (e.g. `LABEL: "interview"` or `LABEL: interview.`), which makes strict regex matching fragile and highlights the need for stripping punctuation.
 ```
